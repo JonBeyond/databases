@@ -4,8 +4,6 @@ CREATE DATABASE chat;
 
 USE chat;
 
-
-
 CREATE TABLE messages (
   /* Messages Table has two fk, room and user.*/
   id INTEGER AUTO_INCREMENT PRIMARY KEY,
@@ -15,18 +13,11 @@ CREATE TABLE messages (
   room INTEGER
 );
 
-
-
-
-
 		
 CREATE TABLE users (
   id INTEGER AUTO_INCREMENT PRIMARY KEY,
   name CHAR(50)
 );
-
-
-
 
 		
 CREATE TABLE rooms (
