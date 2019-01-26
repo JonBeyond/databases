@@ -16,7 +16,7 @@ describe('Persistent Node Chat Server', function() {
     });
     dbConnection.connect();
 
-       var tablename = ""; // TODO: fill this out
+    var tablename = "messages"; // TODO: fill this out
 
     /* Empty the db table before each test so that multiple tests
      * (or repeated runs of the tests) won't screw each other up: */
@@ -49,7 +49,8 @@ describe('Persistent Node Chat Server', function() {
 
         // TODO: You might have to change this test to get all the data from
         // your message table, since this is schema-dependent.
-        var queryString = 'SELECT * FROM messages';
+        var queryString = 'SELECT messages.id, messages.message, messages.createdAt, users.name, rooms.name FROM messages, rooms, users ' +
+                          'WHERE rooms.id = messages.room AND users.id= messages.user';
         var queryArgs = [];
 
         dbConnection.query(queryString, queryArgs, function(err, results) {
@@ -57,7 +58,7 @@ describe('Persistent Node Chat Server', function() {
           expect(results.length).to.equal(1);
 
           // TODO: If you don't have a column named text, change this test.
-          expect(results[0].text).to.equal('In mercy\'s name, three days is all I need.');
+          expect(results[0].message).to.equal('In mercy\'s name, three days is all I need.');
 
           done();
         });
@@ -67,23 +68,32 @@ describe('Persistent Node Chat Server', function() {
 
   it('Should output all messages from the DB', function(done) {
     // Let's insert a message into the db
-       var queryString = "";
+    // there doesn't appear to be a message being POSTed to the server --
+    //  we may have to come back and do this later
+    request({
+        method: 'POST',
+        uri: 'http://127.0.0.1:3000/classes/messages',
+        json: {
+          username: 'Rajat',
+          message: 'Good Morning',
+          roomname: 'denali'
+        }
+    }, function() {
+       var queryString = 'SELECT messages.id, messages.message, messages.createdAt, users.name, rooms.name FROM messages, rooms, users ' +
+                          'WHERE rooms.id = messages.room AND users.id= messages.user';
        var queryArgs = [];
-    // TODO - The exact query string and query args to use
-    // here depend on the schema you design, so I'll leave
-    // them up to you. */
 
-    dbConnection.query(queryString, queryArgs, function(err) {
-      if (err) { throw err; }
-
-      // Now query the Node chat server and see if it returns
-      // the message we just inserted:
-      request('http://127.0.0.1:3000/classes/messages', function(error, response, body) {
-        var messageLog = JSON.parse(body);
-        expect(messageLog[0].text).to.equal('Men like you can never change!');
-        expect(messageLog[0].roomname).to.equal('main');
-        done();
+       dbConnection.query(queryString, queryArgs, function(err) {
+          if (err) { throw err; }
+          // Now query the Node chat server and see if it returns
+          // the message we just inserted:
+          request('http://127.0.0.1:3000/classes/messages', function(error, response, body) {
+            var messageLog = JSON.parse(body);
+            expect(messageLog[0].message).to.equal('Men like you can never change!');
+            expect(messageLog[0].roomname).to.equal('main');
+            done();
+          });
+        });
       });
-    });
-  });
+  });  
 });
