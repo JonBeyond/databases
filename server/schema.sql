@@ -6,7 +6,7 @@ USE chat;
 
 CREATE TABLE messages (
   /* Messages Table has two fk, room and user.*/
-  id INTEGER AUTO_INCREMENT PRIMARY KEY,
+  objectID INTEGER AUTO_INCREMENT PRIMARY KEY,
   message CHAR(255),
   createdAt BIGINT,
   user INTEGER,
@@ -16,13 +16,13 @@ CREATE TABLE messages (
 		
 CREATE TABLE users (
   id INTEGER AUTO_INCREMENT PRIMARY KEY,
-  name CHAR(50)
+  username CHAR(50)
 );
 
 		
 CREATE TABLE rooms (
   id INTEGER AUTO_INCREMENT PRIMARY KEY,
-  name CHAR(50)
+  roomname CHAR(50)
 );
 
 

@@ -49,8 +49,8 @@ describe('Persistent Node Chat Server', function() {
 
         // TODO: You might have to change this test to get all the data from
         // your message table, since this is schema-dependent.
-        var queryString = 'SELECT messages.id, messages.message, messages.createdAt, users.name, rooms.name FROM messages, rooms, users ' +
-                          'WHERE rooms.id = messages.room AND users.id= messages.user';
+        var queryString = 'SELECT messages.objectID, messages.message, messages.createdAt, users.username, rooms.roomname FROM messages, rooms, users ' +
+                          'WHERE rooms.id = messages.room AND users.id = messages.user';
         var queryArgs = [];
 
         dbConnection.query(queryString, queryArgs, function(err, results) {
@@ -79,8 +79,8 @@ describe('Persistent Node Chat Server', function() {
           roomname: 'denali'
         }
     }, function() {
-       var queryString = 'SELECT messages.id, messages.message, messages.createdAt, users.name, rooms.name FROM messages, rooms, users ' +
-                          'WHERE rooms.id = messages.room AND users.id= messages.user';
+       var queryString = 'SELECT messages.objectID, messages.message, messages.createdAt, users.username, rooms.roomname FROM messages, rooms, users ' +
+                          'WHERE rooms.id = messages.room AND users.id = messages.user';
        var queryArgs = [];
 
        dbConnection.query(queryString, queryArgs, function(err) {
