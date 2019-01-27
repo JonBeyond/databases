@@ -40,7 +40,7 @@ describe('Persistent Node Chat Server', function() {
         uri: 'http://127.0.0.1:3000/classes/messages',
         json: {
           username: 'Valjean',
-          message: 'In mercy\'s name, three days is all I need.',
+          message: 'In mercys name, three days is all I need.',
           roomname: 'Hello'
         }
       }, function () {
@@ -52,13 +52,14 @@ describe('Persistent Node Chat Server', function() {
         var queryString = 'SELECT messages.objectID, messages.message, messages.createdAt, users.username, rooms.roomname FROM messages, rooms, users ' +
                           'WHERE rooms.id = messages.room AND users.id = messages.user;';
         var queryArgs = [];
-
+        console.log(queryString);
         dbConnection.query(queryString, queryArgs, function(err, results) {
           // Should have one result:
+          console.log(JSON.stringify(results));
           expect(results.length).to.equal(1);
 
           // TODO: If you don't have a column named text, change this test.
-          expect(results[0].message).to.equal('In mercy\'s name, three days is all I need.');
+          expect(results[0].message).to.equal('In mercys name, three days is all I need.');
 
           done();
         });
@@ -66,34 +67,41 @@ describe('Persistent Node Chat Server', function() {
     });
   });
 
-  xit('Should output all messages from the DB', function(done) {
+  it('Should output all messages from the DB', function(done) {
     // Let's insert a message into the db
     // there doesn't appear to be a message being POSTed to the server --
     //  we may have to come back and do this later
+    
     request({
-        method: 'POST',
-        uri: 'http://127.0.0.1:3000/classes/messages',
-        json: {
-          username: 'Rajat',
-          message: 'Good Morning',
-          roomname: 'denali'
-        }
-    }, function() {
-       var queryString = 'SELECT messages.objectID, messages.message, messages.createdAt, users.username, rooms.roomname FROM messages, rooms, users ' +
-                          'WHERE rooms.id = messages.room AND users.id = messages.user;';
-       var queryArgs = [];
+      method: 'POST',
+      uri: 'http://127.0.0.1:3000/classes/users',
+      json: { username: 'Valjean' }
+    }, function () {
+      request({
+          method: 'POST',
+          uri: 'http://127.0.0.1:3000/classes/messages',
+          json: {
+            username: 'Valjean',
+            message: 'Men like you can never change!',
+            roomname: 'main'
+          }
+      }, function() {
+        var queryString = 'SELECT messages.objectID, messages.message, messages.createdAt, users.username, rooms.roomname FROM messages, rooms, users ' +
+                            'WHERE rooms.id = messages.room AND users.id = messages.user;';
+        var queryArgs = [];
 
-       dbConnection.query(queryString, queryArgs, function(err) {
-          if (err) { throw err; }
-          // Now query the Node chat server and see if it returns
-          // the message we just inserted:
-          request('http://127.0.0.1:3000/classes/messages', function(error, response, body) {
-            var messageLog = JSON.parse(body);
-            expect(messageLog[0].message).to.equal('Men like you can never change!');
-            expect(messageLog[0].roomname).to.equal('main');
-            done();
-          });
-        });
+              dbConnection.query(queryString, queryArgs, function(err) {
+                  if (err) { throw err; }
+                  // Now query the Node chat server and see if it returns
+                  // the message we just inserted:
+                  request('http://127.0.0.1:3000/classes/messages', function(error, response, body) {
+                    var messageLog = JSON.parse(body);
+                    expect(messageLog[0].message).to.equal('Men like you can never change!');
+                    expect(messageLog[0].roomname).to.equal('main');
+                    done();
+                  });
+              });
       });
+    });
   });  
 });

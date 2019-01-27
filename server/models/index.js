@@ -15,59 +15,93 @@ module.exports = {
     get: function () {
       //we need to get all messages from the SQL database
       //we need to query the database here
-      
       let queryString = 'SELECT messages.objectID, messages.message, messages.createdAt, users.username, rooms.roomname FROM messages, rooms, users ' +
                           'WHERE rooms.id = messages.room AND users.id = messages.user;';
       let queryArgs = [];
-      let messages = null;
-      // dbConnection.connect();
-      dbConnection.query(queryString, queryArgs, function (err, results) {
-        //results is the SQL database return.  What does it look like? An array?
-        messages = results;
-      })
 
-      // dbConnection.end();
-      return messages;
+      return new Promise((resolve, reject) => {
+        dbConnection.query(queryString, queryArgs, function (err, results) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(results);
+          }
+        });
+      });
     }, 
-    post: function (data) { // a function which can be used to insert a message into the database
-      let message = data;
+    post: function (message) { // a function which can be used to insert a message into the database
       let statusCode = null;
       message.createdAt = Date.now(); 
 
       if (!message.hasOwnProperty('roomname')) {
         message.roomname = 'default';
       }
-
+      console.log("Sending message: " + JSON.stringify(message));
       if (!message.hasOwnProperty('username') || !message.hasOwnProperty('message')) {
-        statusCode = 400;
+        return 400;
+
       } else { //message is legit
-        statusCode = 200;
-        var queryString = `SELECT username FROM users WHERE users.username = '${message.username}';`;
         var queryArgs = [];
         var insertString = '';
         var queryResult = null;
         var userID = null;
+        var roomID = null;
+        var queryString = null;
 
-        //query for the current user
-        //(if it exists, there will be an array with one value, otherwise empty)
-
-        queryString = `SELECT users.id FROM users WHERE users.username = '${message.username}';`;
-        
-        dbConnection.query(queryString, queryArgs, function (err, results) {
-          if (err) {
-            console.log(err);
-          } else {
-            console.log(results);
-            userID = results[0].id; //????? might need to fix this
-            console.log(`userID is ${userID}`);
-          }
+        return new Promise((resolve, reject) => {
+          queryString = `SELECT users.id FROM users WHERE users.username = '${message.username}';`;
+          dbConnection.query(queryString, queryArgs, function (err, results) {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(results[0].id);
+            }
+          });
+        }).then((result) => {
+          userID = result;
+          return new Promise((resolve, reject) => {
+              var queryString = `SELECT id FROM rooms WHERE rooms.roomname = '${message.roomname}';`;
+              var queryArgs = [];
+              dbConnection.query(queryString, queryArgs, function (err, results) {
+                  if (err) {
+                    reject(err);
+                  } else {
+                    if (results.length !== 0) {
+                      resolve(results[0].id);
+                    } else {
+                      insertString = `INSERT INTO rooms (roomname) VALUES ('${message.roomname}');`;
+                      dbConnection.query(insertString, queryArgs, function (err) {
+                        if (err) {
+                          reject(err);
+                        } else {
+                          //we need to query to get the new roomID
+                          //and then we can resolve   
+                          dbConnection.query(queryString, queryArgs, function (err, results) {
+                            if (err) {
+                              reject(err);
+                            } else {
+                              resolve(results[0].id);
+                            }
+                          });
+                        }
+                      });
+                    }
+                  }
+              })
+          }).then((result) => {
+            roomID = result;
+            insertString = `INSERT INTO messages (message, createdAt, user, room) VALUES ('${message.message}', ${message.createdAt}, ${userID}, ${roomID});` //hardcoding ${roomID} as 1;
+            dbConnection.query(insertString, queryArgs, function (err) {
+              if (err) {
+                console.log(err);
+              }
+            });             
         });
-
-      return statusCode;
-      }
-    },
+        
+      });
+    }
+  }
   },
-
   users: {
     // Ditto as above.
     get: function () {
@@ -81,7 +115,6 @@ module.exports = {
           if (err) {
             reject(err);
           } else {
-            console.log(JSON.stringify(results));
             resolve(results);
           }
         });

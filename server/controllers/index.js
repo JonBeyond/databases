@@ -7,21 +7,23 @@ module.exports = {
   messages: {
     get: function (req, res) { // a function which handles a get request for all messages
       res.writeHead(200, {'Content-Type': 'application/JSON'});
-      var data = models.messages.get(); //this will produce all the messages
-      res.end(JSON.stringify(data));
+      models.messages.get().then((success) => {
+        res.end(JSON.stringify(success));
+      }) //this will produce all the messages
     }, 
     post: function (req, res) { // a function which handles posting a message to the database
       let status = 500;
-      status = models.messages.post(req.body);
-      res.writeHead(status);
-      res.end();
+      models.messages.post(req.body).then(() => {
+        res.writeHead(201);
+        res.end();
+      })
     } 
   },
 
   users: {
     get: function (req, res) {
       res.writeHead(200, {'Content-Type': 'application/JSON'});
-      var data = models.users.get().then((success) => {
+      models.users.get().then((success) => {
           res.end(JSON.stringify(success));      
         });
     },
