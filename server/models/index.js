@@ -1,4 +1,5 @@
 var db = require('../db');
+var mysql = require('mysql');
 
 // model
 // this file interacts with the database
@@ -14,31 +15,24 @@ module.exports = {
     get: function () {
       //we need to get all messages from the SQL database
       //we need to query the database here
-      var queryString = 'SELECT messages.objectID, messages.message, messages.createdAt, users.username, rooms.roomname FROM messages, rooms, users ' +
-                          'WHERE rooms.id = messages.room AND users.id = messages.user';
-      var queryArgs = [];
-      var messages = null;
-      dbConnection.connect();
+      
+      let queryString = 'SELECT messages.objectID, messages.message, messages.createdAt, users.username, rooms.roomname FROM messages, rooms, users ' +
+                          'WHERE rooms.id = messages.room AND users.id = messages.user;';
+      let queryArgs = [];
+      let messages = null;
+      // dbConnection.connect();
       dbConnection.query(queryString, queryArgs, function (err, results) {
         //results is the SQL database return.  What does it look like? An array?
         messages = results;
       })
 
-      dbConnection.end();
+      // dbConnection.end();
       return messages;
     }, 
     post: function (data) { // a function which can be used to insert a message into the database
-      /* Expectation of a message:
-        {
-          username: name, (REQUIRED)
-          message: message, (REQUIRED)
-          roomname: room (OPTIONAL; if not present. store 'default')
-        }
-        missing: createdAt = new.Date()
-                 objectId => created by the SQL database (primary key).
-      */
-      let message = JSON.parse(data);
+      let message = data;
       let statusCode = null;
+      message.createdAt = Date.now(); 
 
       if (!message.hasOwnProperty('roomname')) {
         message.roomname = 'default';
@@ -48,58 +42,30 @@ module.exports = {
         statusCode = 400;
       } else { //message is legit
         statusCode = 200;
+        var queryString = `SELECT username FROM users WHERE users.username = '${message.username}';`;
+        var queryArgs = [];
+        var insertString = '';
+        var queryResult = null;
+        var userID = null;
 
+        //query for the current user
+        //(if it exists, there will be an array with one value, otherwise empty)
+
+        queryString = `SELECT users.id FROM users WHERE users.username = '${message.username}';`;
         
-      }
+        dbConnection.query(queryString, queryArgs, function (err, results) {
+          if (err) {
+            console.log(err);
+          } else {
+            console.log(results);
+            userID = results[0].id; //????? might need to fix this
+            console.log(`userID is ${userID}`);
+          }
+        });
 
       return statusCode;
-      //note: message is in JSON
-      // 0) convert message into an object
-      // 1) create an INSERT string using es6 ``
-      // 2) we need a way to send the INSERT string to the database (dbconnection)
-      // question:
-      // what if message doesnt contain certain parameters (roomname? username? etc)
-      // --> send it as null
-      // we need to generate the timestamp
-
-
-      /* INSERTING process:
-       * 1: Query the users table
-       * --> If the user does not exist, then we INSERT the new user
-       * --> If the user does exist, do not add (skip to SELECT)
-       * --> SELECT the new user's ID (fk) and save it to a variable
-       * 
-       * 2. Same steps as above for the room
-       * --> SAVE the roomID (fk)
-       * 
-       * 3. Post the message using an insert command:
-       *  The parameters we need to post are:
-       *  1) ObjectID is created by SQL primary key
-       *  2) message
-       *  3) createdAt (which needs to be created here using Date.now())
-       *  4. usedID (which we saved earlier)
-       *  5. roomID (which we saved earlier)
-       * 
-       * Edge case questions:
-       *  1) what if a message doesnt have a username specified?
-       *  --> REJECT ALWAYS
-       *  2) what if a message doesnt have a room specified?
-       * --> Create a 'default' 
-       *  3) what if a message doesnt have a message?
-       * --> REJECT ALWAYS
-       */ 
-
-
-
-      var queryString = ``;
-      dbConnection.query('INSERT INTO posts SET ?', post, function (error, results, fields) {
-        if (error) throw error;
-        // Neat!
-      });
-
-
-    }
-     
+      }
+    },
   },
 
   users: {
@@ -107,20 +73,35 @@ module.exports = {
     get: function () {
       //we need to get all users from the SQL database
       //we need to query the database here
-      var queryString = 'SELECT users.username FROM users';
+      var queryString = 'SELECT users.username FROM users;';
       var queryArgs = [];
       var users = null;
-      dbConnection.connect();
-      dbConnection.query(queryString, queryArgs, function (err, results) {
-        users = results;
-      })
-
-      dbConnection.end();
-      return users;
+      return new Promise((resolve,reject) => {
+        dbConnection.query(queryString, queryArgs, (err, results) => {
+          if (err) {
+            reject(err);
+          } else {
+            console.log(JSON.stringify(results));
+            resolve(results);
+          }
+        });
+      });
     },
-    post: function () {
-
-    }
+    post: function (message) {
+      var queryString = `SELECT username FROM users WHERE users.username = '${message.username}';`;
+      var queryArgs = [];
+      var queryResult = null;
+      dbConnection.query(queryString, queryArgs, function (err, results) {
+          if (err) console.log(err);
+          queryResult = results;
+          if (queryResult.length === 0) {
+              insertString = `INSERT INTO users (username) VALUES ('${message.username}');`;
+              dbConnection.query(insertString, queryArgs, function (err, results) {
+                if (err) console.log(err);
+              });
+          };
+      });
+      return 201;
+   }
   }
-};
-
+}

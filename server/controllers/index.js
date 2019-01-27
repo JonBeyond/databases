@@ -12,28 +12,22 @@ module.exports = {
     }, 
     post: function (req, res) { // a function which handles posting a message to the database
       let status = 500;
-      req.on('data', (data) => {
-        //data is in JSON format here.
-        status = models.messages.post(data);
-      })
+      status = models.messages.post(req.body);
       res.writeHead(status);
       res.end();
     } 
   },
 
   users: {
-    // Ditto as above
     get: function (req, res) {
       res.writeHead(200, {'Content-Type': 'application/JSON'});
-      var data = models.users.get(); //this will produce all the messages
-      res.end(JSON.stringify(data));      
+      var data = models.users.get().then((success) => {
+          res.end(JSON.stringify(success));      
+        });
     },
     post: function (req, res) {
       let status = 500;
-      req.on('data', (data) => {
-        //data is in JSON format here.
-        status = models.users.post(data);
-      })
+      status = models.users.post(req.body);
       res.writeHead(status);
       res.end();
     }
